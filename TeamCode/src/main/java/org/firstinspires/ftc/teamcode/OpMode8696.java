@@ -6,6 +6,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.exception.RobotCoreException;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
+import com.qualcomm.robotcore.hardware.PwmControl;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoControllerEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.vuforia.PIXEL_FORMAT;
@@ -69,22 +72,22 @@ public abstract class OpMode8696 extends LinearOpMode {
     public static final boolean BLUE = false;
 
     /**
-     * constant for how many encoder counts are equivalent
-     * to strafing one inch sideways.
-     */
-    private static final double STRAFE_COEFFICIENT = 400; // TODO: make this value more exact
-
-    /**
      * constant for how many encodes counts are equivalent
      * to rotating the robot one degree.
      */
     private static final double TURN_COEFFICIENT = 15;
 
-    private RobotState robotState;
+    protected RobotState robotState;
 
     private long lastPeriodicCall = 0;
     protected VuforiaTrackable relicTemplate;
 
+    /**
+     * Check if enough time has passed to call {@link #periodic()} again.
+     * If so, call it. Should be called every iteration of the main loop.
+     * @param ms number of milliseconds between each call to {@link #periodic()}
+     * @see #periodic()
+     */
     protected void periodic(long ms) {
         long t = System.currentTimeMillis();
         if (t >= lastPeriodicCall + ms) {
@@ -93,9 +96,12 @@ public abstract class OpMode8696 extends LinearOpMode {
         }
     }
 
+    /**
+     * Method that will be called periodically.
+     * @see #periodic(long ms)
+     */
     protected void periodic() {
-
-        robotState = new RobotState(this);
+//        robotState = new RobotState(this);
     }
 
     protected void initRobot() {
@@ -113,6 +119,16 @@ public abstract class OpMode8696 extends LinearOpMode {
         motors[1] = rightBack;
         motors[2] = leftFront;
         motors[3] = rightFront;
+    }
+
+    protected void extendServo(Servo servo, double min, double max) {
+        // Confirm its an extended range servo controller before we try to set to avoid crash
+        if (servo.getController() instanceof ServoControllerEx) {
+            ServoControllerEx controller = (ServoControllerEx) servo.getController();
+            int port = servo.getPortNumber();
+            PwmControl.PwmRange range = new PwmControl.PwmRange(min, max); // 553, 2425
+            controller.setServoPwmRange(port, range);
+        }
     }
 
     protected void initVuforia() {
@@ -198,38 +214,6 @@ public abstract class OpMode8696 extends LinearOpMode {
         return currPressed;
     }
 
-    /**
-     * Calculate the angles for driving and move/rotate the robot.
-     */
-    protected void mecanumTeleOpDrive() {
-        double ly = gamepad1.left_stick_y;
-        double lx = -gamepad1.left_stick_x;
-        double ry = gamepad1.right_stick_y;
-        double rx = -gamepad1.right_stick_x;
-
-        double leftAngle  = getGamepadAngle(lx, ly);
-
-        double rightAngle = getGamepadAngle(rx, ry);
-
-        for (Motor8696 motor : motors) {
-            motor.reset();
-        }
-
-        getGyroData();
-
-        if (!Double.isNaN(leftAngle) && getMagnitude(lx, ly) >= 0.25) {
-            driveDirectionRelativeToRobot(leftAngle, getMagnitude(lx, ly));
-        }
-
-        if (!Double.isNaN(rightAngle) && getMagnitude(rx, ry) >= 0.5) {
-            onHeading(rightAngle * 180 / Math.PI, 0.5, 1, false);
-            for (Motor8696 motor : motors)
-                motor.addPower(0, 1);
-        }
-
-        runMotors();
-    }
-
     protected double getGamepadAngle(double x, double y) {
         double angle  = Math.atan(-y / x);
         if (x < 0) angle += Math.PI;
@@ -240,22 +224,6 @@ public abstract class OpMode8696 extends LinearOpMode {
     protected double getMagnitude(double x, double y) {
         double magnitude = Math.sqrt(x*x + y*y);
         return Range.clip(magnitude, -1, 1);
-    }
-
-    /**
-     * Drive the robot in a specified direction regardless of its
-     * current rotation. Meant to be used with mecanum wheels.
-     *
-     * @param angle angle that the robot should move towards. Starts at standard position.
-     * @param power number to scale all the motor power by.
-     */
-    private void driveDirectionRelativeToRobot(double angle, double power) {
-        angle = adjustAngle(angle, angles.firstAngle);
-        angle = angle / 180 * Math.PI;
-        leftBack  .addPower((Math.sin(angle) - Math.cos(angle)) * power);
-        rightBack .addPower((Math.sin(angle) + Math.cos(angle)) * power);
-        leftFront .addPower((Math.sin(angle) + Math.cos(angle)) * power);
-        rightFront.addPower((Math.sin(angle) - Math.cos(angle)) * power);
     }
 
     protected void autoTurn(double angle, double power, double timeoutSeconds) {
@@ -351,7 +319,7 @@ public abstract class OpMode8696 extends LinearOpMode {
      * @param currentRotation The current robot orientation, (preferably) found by a gyro sensor.
      * @return Adjusted angle, -180 <= angle <= 180
      */
-    private double adjustAngle(double target, double currentRotation) {
+    protected double adjustAngle(double target, double currentRotation) {
         double diff = target - currentRotation;
         while (Math.abs(diff) > 180) {
             target += (diff >= 180) ? -180 : 180;
@@ -378,52 +346,6 @@ public abstract class OpMode8696 extends LinearOpMode {
 
             motor.setPower(power);
         }
-
-        runtime.reset();
-
-        while (opModeIsActive() &&
-                runtime.seconds() < timeoutSeconds &&
-                Motor8696.motorsBusy(motors) &&
-                !runUntil.stop()) {
-            idle();
-        }
-
-        for (Motor8696 motor : motors) {
-            motor.setPower(0);
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }
-    }
-
-    void autoStrafe(double inches, double power, double timeoutSeconds) {
-        autoStrafe(inches, power, timeoutSeconds, new RunUntil() {
-            @Override
-            public boolean stop() {
-                return false;
-            }
-        });
-    }
-
-    /**
-     * Strafe to the side a set distance
-     *
-     * @param inches Number of inches to strafe.
-     *               positive is right, negative is left.
-     * @param power Power to set the motors to.
-     * @param timeoutSeconds After this many seconds, it stops trying.
-     */
-    void autoStrafe(double inches, double power, double timeoutSeconds, RunUntil runUntil) {
-        for (Motor8696 motor : motors) {
-            motor.storePosition();
-            motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        }
-
-        leftBack  .setRelativeTarget((int) ( inches * STRAFE_COEFFICIENT));
-        rightBack .setRelativeTarget((int) (-inches * STRAFE_COEFFICIENT));
-        leftFront .setRelativeTarget((int) (-inches * STRAFE_COEFFICIENT));
-        rightFront.setRelativeTarget((int) ( inches * STRAFE_COEFFICIENT));
-
-        for (Motor8696 motor : motors)
-            motor.setPower(Math.abs(power));
 
         runtime.reset();
 

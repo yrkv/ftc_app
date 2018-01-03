@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
@@ -11,11 +13,20 @@ public class RobotState {
     public Acceleration gravity;
     public Orientation angles;
 
+    /**
+     * leftFront,
+     * rightFront,
+     * leftBack,
+     * rightBack,
+     * leftCollector,
+     * rightCollector
+     */
     public MotorState[] motors;
 
-    public RobotState(OpMode8696 robot) {
-        for (int i = 0; i < robot.motors.length; i++) {
-            motors[i] = new MotorState(robot.motors[i]);
+    public RobotState(OpMode8696 robot, DcMotor[] robotMotors) {
+        motors = new MotorState[robotMotors.length];
+        for (int i = 0; i < robotMotors.length; i++) {
+            motors[i] = new MotorState(robotMotors[i]);
         }
         gravity = robot.gravity;
         angles = robot.angles;
@@ -28,5 +39,14 @@ public class RobotState {
             out += "\n" + motor;
         }
         return out;
+    }
+
+    public void update(OpMode8696 robot) {
+        gravity = robot.gravity;
+        angles = robot.angles;
+
+        for (MotorState motorState : motors) {
+            motorState.update();
+        }
     }
 }

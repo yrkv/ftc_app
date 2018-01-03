@@ -35,7 +35,6 @@ public abstract class TempOpMode extends OpMode8696 {
 
     protected void initRobot() {
         super.initRobot();
-        initMotors();
 
         leftBack  .setDirection(DcMotor.Direction.FORWARD);
         rightBack .setDirection(DcMotor.Direction.REVERSE);

@@ -23,6 +23,10 @@ public class Motor8696 implements DcMotor {
 
     private int lastPosition = 0;
 
+    public DcMotor getMotor() {
+        return motor;
+    }
+
     public Motor8696(DcMotor motor) {
         this.motor = motor;
     }
