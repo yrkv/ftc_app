@@ -53,20 +53,35 @@ public class NewRobot extends MecanumOpMode {
     }
 
     private void setLiftTarget() {
-        leftLift.setTargetPosition(-liftPosition * LIFT_BLOCK_HEIGHT);
-        rightLift.setTargetPosition(-liftPosition * LIFT_BLOCK_HEIGHT);
+        leftLift.setTargetPosition(liftPosition * LIFT_BLOCK_HEIGHT);
+        rightLift.setTargetPosition(liftPosition * LIFT_BLOCK_HEIGHT);
 
         leftLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         rightLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
 
-//        leftLift.setPower(0.3);
-//        rightLift.setPower(0.3);
+    private void runLift() {
+        int leftDiff = Math.abs(liftPosition * LIFT_BLOCK_HEIGHT - leftLift.getCurrentPosition());
+        int rightDiff = Math.abs(liftPosition * LIFT_BLOCK_HEIGHT - rightLift.getCurrentPosition());
+
+        if (leftDiff > rightDiff) {
+            leftLift.setPower(0.51);
+            rightLift.setPower(0.5);
+        } else if (leftDiff > rightDiff) {
+            leftLift.setPower(0.5);
+            rightLift.setPower(0.51);
+        } else {
+            leftLift.setPower(0.5);
+            rightLift.setPower(0.5);
+        }
     }
 
     @Override
     public void runOpMode() throws InterruptedException {
         initRobot();
         buttonEvents();
+
+        setLiftTarget();
 
         waitForStart();
 
@@ -95,8 +110,10 @@ public class NewRobot extends MecanumOpMode {
                 rightCollector.setPower(0);
             }
 
-            leftLift.setPower(gamepad2.left_stick_y);
-            rightLift.setPower(gamepad2.left_stick_y);
+//            leftLift.setPower(gamepad2.left_stick_y);
+//            rightLift.setPower(gamepad2.left_stick_y);
+
+            runLift();
 
             telemetry.addData("liftPower", gamepad2.left_stick_y);
 

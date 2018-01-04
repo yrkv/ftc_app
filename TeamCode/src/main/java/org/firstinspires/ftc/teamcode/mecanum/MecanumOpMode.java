@@ -92,7 +92,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
 
         leftCollector.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        rightLift.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftLift.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
