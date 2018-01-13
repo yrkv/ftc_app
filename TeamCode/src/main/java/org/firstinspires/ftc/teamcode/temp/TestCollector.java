@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
  * Created by USER on 11/21/2017.
  */
 
-@TeleOp(name="collector", group="Temp")
+//@TeleOp(name="collector", group="Temp")
 public class TestCollector extends TempOpMode {
 
     @Override

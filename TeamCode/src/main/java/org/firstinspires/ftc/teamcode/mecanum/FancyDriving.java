@@ -1,31 +1,25 @@
 package org.firstinspires.ftc.teamcode.mecanum;
 
-import com.qualcomm.robotcore.eventloop.SyncdDevice;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.ServoImplEx;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Button;
 import org.firstinspires.ftc.teamcode.ButtonEvent;
 import org.firstinspires.ftc.teamcode.Motor8696;
 import org.firstinspires.ftc.teamcode.MotorState;
-import org.firstinspires.ftc.teamcode.RobotState;
 import org.firstinspires.ftc.teamcode.ServoTarget;
 
 /**
- * Created by USER on 12/8/2017.
+ * Created by USER on 1/7/2018.
  */
 
-@TeleOp(name="testNewBot", group="Temp")
-public class NewRobot extends MecanumOpMode {
-
+@TeleOp(name="FancyDriving", group="Temp")
+public class FancyDriving extends MecanumOpMode {
     /**
      * How many encoder counts the lifts need to
      * rotate to elevate the lift by one block.
      */
-    private final static int LIFT_BLOCK_HEIGHT = 1000;
+    private final static int LIFT_BLOCK_HEIGHT = 3000;
 
     private int liftPosition = 0;
 
@@ -39,8 +33,8 @@ public class NewRobot extends MecanumOpMode {
         addButtonEvent(2, new ButtonEvent(Button.UP) {
             public void onDown() {
                 liftPosition++;
-//                if (liftPosition > 3)
-//                    liftPosition = 3;
+                if (liftPosition > 3)
+                    liftPosition = 3;
                 setLiftTarget();
             }
         });
@@ -48,8 +42,8 @@ public class NewRobot extends MecanumOpMode {
         addButtonEvent(2, new ButtonEvent(Button.DOWN) {
             public void onDown() {
                 liftPosition--;
-//                if (liftPosition < -1)
-//                    liftPosition = -1;
+                if (liftPosition < -1)
+                    liftPosition = -1;
                 setLiftTarget();
             }
         });
@@ -68,14 +62,14 @@ public class NewRobot extends MecanumOpMode {
         int rightDiff = Math.abs(liftPosition * LIFT_BLOCK_HEIGHT - rightLift.getCurrentPosition());
 
         if (leftDiff > rightDiff) {
-            leftLift.setPower(0.62);
-            rightLift.setPower(0.6);
+            leftLift.setPower(0.51);
+            rightLift.setPower(0.5);
         } else if (leftDiff > rightDiff) {
-            leftLift.setPower(0.6);
-            rightLift.setPower(0.62);
+            leftLift.setPower(0.5);
+            rightLift.setPower(0.51);
         } else {
-            leftLift.setPower(0.6);
-            rightLift.setPower(0.6);
+            leftLift.setPower(0.5);
+            rightLift.setPower(0.5);
         }
     }
 
@@ -83,9 +77,6 @@ public class NewRobot extends MecanumOpMode {
     public void runOpMode() throws InterruptedException {
         initRobot();
         buttonEvents();
-
-//        DistanceSensor leftDist = hardwareMap.get(DistanceSensor.class, "leftDist");
-//        DistanceSensor rightDist = hardwareMap.get(DistanceSensor.class, "rightDist");
 
         setLiftTarget();
 
@@ -117,51 +108,41 @@ public class NewRobot extends MecanumOpMode {
                 rightCollector.setPower(0);
             }
 
-
-
-//            telemetry.addData("leftDist", leftDist.getDistance(DistanceUnit.CM));
-//            telemetry.addData("rightDist", leftDist.getDistance(DistanceUnit.CM));
-
-
-
 //            leftLift.setPower(gamepad2.left_stick_y);
 //            rightLift.setPower(gamepad2.left_stick_y);
 
-//            cubePoosher.setPosition(gamepad2.left_trigger);
-
-//            telemetry.addData("cube", gamepad2.left_trigger);
-
             runLift();
-
-            telemetry.addData("leftLift", leftLift.getCurrentPosition());
-            telemetry.addData("rightLift", rightLift.getCurrentPosition());
 
             telemetry.addData("angles", angles.toString());
 
+            ballPoosher.setPosition(gamepad2.left_trigger);
 
             telemetry.addData(leftCollector.getDeviceName(), robotState.motors[4].speed);
             telemetry.addData(rightCollector.getDeviceName(), robotState.motors[5].speed);
 
-            telemetry.addData("gamepadAngle", getGamepadAngle(gamepad1.left_stick_x, gamepad1.left_stick_y));
+            telemetry.addData("gamepadLeft", getGamepadAngle(gamepad1.left_stick_x, gamepad1.left_stick_y));
+            telemetry.addData("gamepadRight", getGamepadAngle(gamepad1.right_stick_x, gamepad1.right_stick_y));
 
             if (!dpadDrive()) {
-                if (reverse > 0)
-                    verticalDrive(reverse * driveSpeed, gamepad1.left_stick_y, gamepad1.right_stick_y);
-                else
-                    verticalDrive(reverse * driveSpeed, gamepad1.right_stick_y, gamepad1.left_stick_y);
-                horizontalDrive(reverse * driveSpeed, (gamepad1.right_trigger - gamepad1.left_trigger));
 
-                for (Motor8696 motor : motors) {
-                    motor.setMaxPower(Math.sqrt(2));
-                }
+                mecanumTeleOpDrive();
+//                if (reverse > 0)
+//                    verticalDrive(reverse * driveSpeed, gamepad1.left_stick_y, gamepad1.right_stick_y);
+//                else
+//                    verticalDrive(reverse * driveSpeed, gamepad1.right_stick_y, gamepad1.left_stick_y);
+//                horizontalDrive(reverse * driveSpeed, (gamepad1.right_trigger - gamepad1.left_trigger));
+//
+//                for (Motor8696 motor : motors) {
+//                    motor.setMaxPower(Math.sqrt(2));
+//                }
 
-                runMotors();
+//                runMotors();
             }
 
             if (!cubePoosherTarget.runServo()) cubePoosherTarget = ServoTarget.NULL;
 
             runButtonEvents();
-//            periodic(100);
+            periodic(100);
 
             telemetry.update();
         }

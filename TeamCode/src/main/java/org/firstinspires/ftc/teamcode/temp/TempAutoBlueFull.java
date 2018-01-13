@@ -8,7 +8,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
  * Created by USER on 11/3/2017.
  */
 
-@Autonomous(name="Full Auto BLUE", group ="Temp")
+//@Autonomous(name="Full Auto BLUE", group ="Temp")
 public class TempAutoBlueFull extends TempOpMode {
 
     @Override
@@ -26,13 +26,13 @@ public class TempAutoBlueFull extends TempOpMode {
 
         cubeLinearArm.setPower(0);
 
-//        pushBall(BLUE);
+        pushBall(BLUE);
 
-        autoTurn(15, 0.4, 3);
+        autoTurn(15, 0.4, 3, true);
 
         RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
 
-        autoTurn(-90, 0.4, 5);
+        autoTurn(-90, 0.4, 5, true);
 //        autoTurn(-90, 0.4, 2);
 
         double dist = 20;
@@ -54,7 +54,7 @@ public class TempAutoBlueFull extends TempOpMode {
                 break;
         }
 
-        autoTurn(-180, 0.5, 5);
+        autoTurn(-180, 0.5, 5, true);
 
         autoDrive(20, 0.4, 6);
 

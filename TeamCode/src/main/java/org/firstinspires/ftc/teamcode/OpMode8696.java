@@ -138,7 +138,7 @@ public abstract class OpMode8696 extends LinearOpMode {
 
         parameters.vuforiaLicenseKey = "AXsBBW7/////AAAAGXj7SVf450terrL5QOqPUr1Tozrj/sG57Z/tukLNECvwVhLUNaNxKv783tA6U2Kze0Hs+9EpVCJ8PzhKRCocFqWqDdZbqjktD2McMriGHUtCiIfoFyF5xKCZ11QBmMNTRBRkqV/s0HWgxkD41BA8d3ZlfS9zF7Vgh1397O35rqCY8KyjTqtaPzbxecZWb96/Bpq0Ct9u/e0e35d0+Vth/VdGp3vLMRFPNzPEZlJ6/VDQlgeHobmzJ7ccHKb6k7WPUC7vDyZEZXyIQPnAJoLbHT+j4kYFnVuFUaok5jrNn8TknXxpgRSvQTsxeilOQQtSxn/a9SNiR7pnpqRjLWAe0E1H5qu3a952fwo7PlGxkzk1";
 
-        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
+        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 
         this.vuforia = new ClosableVuforiaLocalizer(parameters);
 
@@ -226,7 +226,7 @@ public abstract class OpMode8696 extends LinearOpMode {
         return Range.clip(magnitude, -1, 1);
     }
 
-    protected void autoTurn(double angle, double power, double timeoutSeconds) {
+    protected void autoTurn(double angle, double power, double timeoutSeconds, boolean useEncoders) {
         runtime.reset();
         getGyroData();
 
@@ -235,7 +235,7 @@ public abstract class OpMode8696 extends LinearOpMode {
         telemetry.log().add("%.2f", diff);
 
         while (opModeIsActive() &&
-                onHeading(angle, power, 0.5, true) &&
+                onHeading(angle, power, 0.5, useEncoders) &&
                 runtime.seconds() < timeoutSeconds) {
             idle();
             runMotors();
@@ -293,17 +293,24 @@ public abstract class OpMode8696 extends LinearOpMode {
     private void crappyTurning(double diff, double power) {
         for (Motor8696 motor : motors) {
             motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            telemetry.addData(motor.getPortNumber() + "", motor.getCurrentPosition());
         }
 
         double temp = diff/30 * power;
         if (Math.abs(temp) < Math.abs(power))
             power = temp;
+        else if (temp < 0) {
+            power *= -1;
+        }
         if (Math.abs(power) <= 0.15) {
             if (power < 0)
                 power = -0.15;
             else
                 power = 0.15;
         }
+
+        telemetry.addData("power", power);
+        telemetry.update();
 
         leftBack  .addPower( power);
         rightBack .addPower(-power);
@@ -322,7 +329,7 @@ public abstract class OpMode8696 extends LinearOpMode {
     protected double adjustAngle(double target, double currentRotation) {
         double diff = target - currentRotation;
         while (Math.abs(diff) > 180) {
-            target += (diff >= 180) ? -180 : 180;
+            target += (diff >= 180) ? -360 : 360;
             diff = target - currentRotation;
         }
         return diff;

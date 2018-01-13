@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.Motor8696;
  * Created by USER on 10/13/2017.
  */
 
-@TeleOp(name="tempDriveB", group="Temp")
+//@TeleOp(name="tempDriveB", group="Temp")
 public class TempDriveB extends TempOpMode {
 
     private int reverse = 1;

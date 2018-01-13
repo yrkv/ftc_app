@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
  * Created by USER on 11/3/2017.
  */
 
-@Autonomous(name="Simple Auto RED", group ="Temp")
+//@Autonomous(name="Simple Auto RED", group ="Temp")
 public class TempAutoRed extends TempOpMode {
 
     @Override

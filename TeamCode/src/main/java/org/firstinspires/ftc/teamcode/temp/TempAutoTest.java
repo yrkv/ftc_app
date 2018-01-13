@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
  * Created by USER on 11/18/2017.
  */
 
-@Autonomous(name="Temp Auto BONOBO", group ="Temp")
+//@Autonomous(name="Temp Auto BONOBO", group ="Temp")
 public class TempAutoTest extends TempOpMode {
 
 

@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  * Created by USER on 10/4/2017.
  */
 
-@Autonomous(name="Testing Vision", group ="Test")
+//@Autonomous(name="Testing Vision", group ="Test")
 public class TestBlockVision extends OpMode8696 {
 
 

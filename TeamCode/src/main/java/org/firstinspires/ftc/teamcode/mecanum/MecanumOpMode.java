@@ -2,12 +2,10 @@ package org.firstinspires.ftc.teamcode.mecanum;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoImplEx;
-import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.Button;
 import org.firstinspires.ftc.teamcode.ButtonEvent;
@@ -23,8 +21,16 @@ import org.firstinspires.ftc.teamcode.ServoTarget;
 
 public abstract class MecanumOpMode extends OpMode8696 {
 
+    /**
+     * Servo to push one of the jewels <br/>
+     * 0 = up, 1 = down
+     */
     Servo ballPoosher;
     Servo cubePoosher;
+    /**
+     *
+     * 1 = up, 0 = down
+     */
     Servo leftDump;
     Servo rightDump;
 
@@ -38,7 +44,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
      * constant for how many encoder counts are equivalent
      * to strafing one inch sideways.
      */
-    private static final double STRAFE_COEFFICIENT = 400; // TODO: make this value more exact
+    private static final double STRAFE_COEFFICIENT = 94; // TODO: make this value more exact
 
     private static final double DPAD_MULT = 0.5;
 
@@ -58,7 +64,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
 
         for (Motor8696 motor : motors) {
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
@@ -66,6 +72,8 @@ public abstract class MecanumOpMode extends OpMode8696 {
         cubePoosher = hardwareMap.get(Servo.class, "cubePoosher");
         leftDump = hardwareMap.get(Servo.class, "leftDump");
         rightDump = hardwareMap.get(Servo.class, "rightDump");
+
+        ballPoosher.setPosition(0);
 
         double min = 0.19;
         double max = 0.72;
@@ -79,7 +87,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
         leftDump.setPosition(0);
         rightDump.setPosition(0);
 
-        cubePoosher.scaleRange(0.4, 0.9);
+        cubePoosher.scaleRange(0.17, 0.6);
 
         leftLift = hardwareMap.get(DcMotor.class, "leftLift");
         rightLift = hardwareMap.get(DcMotor.class, "rightLift");
@@ -155,11 +163,12 @@ public abstract class MecanumOpMode extends OpMode8696 {
                 double target = 0;
                 double diff = Math.abs(cubePoosher.getPosition() - target) * (max - min);
 
-                cubePoosherTarget = new ServoTarget(cubePoosher,
-                        System.currentTimeMillis(),
-                        System.currentTimeMillis() + (int) (diff / SPEED),
-                        cubePoosher.getPosition(),
-                        target);
+                cubePoosher.setPosition(0);
+//                cubePoosherTarget = new ServoTarget(cubePoosher,
+//                        System.currentTimeMillis(),
+//                        System.currentTimeMillis() + (int) (diff / SPEED),
+//                        cubePoosher.getPosition(),
+//                        target);
             }
 
             public void onUp() {
@@ -227,9 +236,9 @@ public abstract class MecanumOpMode extends OpMode8696 {
      */
     protected void mecanumTeleOpDrive() {
         double ly = gamepad1.left_stick_y;
-        double lx = -gamepad1.left_stick_x;
+        double lx = gamepad1.left_stick_x;
         double ry = gamepad1.right_stick_y;
-        double rx = -gamepad1.right_stick_x;
+        double rx = gamepad1.right_stick_x;
 
         double leftAngle  = getGamepadAngle(lx, ly);
 
@@ -242,11 +251,12 @@ public abstract class MecanumOpMode extends OpMode8696 {
         getGyroData();
 
         if (!Double.isNaN(leftAngle) && getMagnitude(lx, ly) >= 0.25) {
-            driveDirectionRelativeToRobot(leftAngle, getMagnitude(lx, ly));
+            driveDirection(leftAngle * 180 / Math.PI, getMagnitude(lx, ly));
         }
 
         if (!Double.isNaN(rightAngle) && getMagnitude(rx, ry) >= 0.5) {
-            onHeading(rightAngle * 180 / Math.PI, 0.5, 1, false);
+            telemetry.addData("angle", rightAngle * 180 / Math.PI - 90);
+            onHeading(rightAngle * 180 / Math.PI - 90, 0.5, 1, false);
             for (Motor8696 motor : motors)
                 motor.addPower(0, 1);
         }
@@ -258,16 +268,27 @@ public abstract class MecanumOpMode extends OpMode8696 {
      * Drive the robot in a specified direction regardless of its
      * current rotation. Meant to be used with mecanum wheels.
      *
-     * @param angle angle that the robot should move towards. Starts at standard position.
+     * @param angle degrees, angle that the robot should move towards. Starts at standard position.
      * @param power number to scale all the motor power by.
      */
-    private void driveDirectionRelativeToRobot(double angle, double power) {
+    private void driveDirection(double angle, double power) {
         angle = adjustAngle(angle, angles.firstAngle);
+        driveDirectionRelative(angle, power);
+    }
+
+    /**
+     * Drive the robot in a specific direction relative
+     * to the robot orientation.
+     *
+     * @param angle degrees, angle that the robot should move towards. Starts at standard position.
+     * @param power number to scale all the motor power by.
+     */
+    private void driveDirectionRelative(double angle, double power) {
         angle = angle / 180 * Math.PI;
-        leftBack  .addPower((Math.sin(angle) - Math.cos(angle)) * power);
-        rightBack .addPower((Math.sin(angle) + Math.cos(angle)) * power);
-        leftFront .addPower((Math.sin(angle) + Math.cos(angle)) * power);
-        rightFront.addPower((Math.sin(angle) - Math.cos(angle)) * power);
+        leftBack  .addPower((Math.sin(angle) + Math.cos(angle)) * power);
+        rightBack .addPower((Math.sin(angle) - Math.cos(angle)) * power);
+        leftFront .addPower((Math.sin(angle) - Math.cos(angle)) * power);
+        rightFront.addPower((Math.sin(angle) + Math.cos(angle)) * power);
     }
 
     void autoStrafe(double inches, double power, double timeoutSeconds) {

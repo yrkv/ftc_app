@@ -13,6 +13,9 @@ public class ServoTarget {
     private double startPos;
     private double endPos;
 
+    private long t;
+    private static long dt = 10;
+
     public static final ServoTarget NULL = new ServoTarget(null, 0, 0, 0, 0) {
         @Override
         public boolean runServo() {
@@ -26,6 +29,8 @@ public class ServoTarget {
         this.endTime = endTime;
         this.startPos = startPos;
         this.endPos = endPos;
+
+        t = System.currentTimeMillis();
     }
 
     /**

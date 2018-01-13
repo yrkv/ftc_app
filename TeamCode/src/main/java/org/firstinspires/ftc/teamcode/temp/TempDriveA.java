@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.Motor8696;
  * Created by USER on 10/13/2017.
  */
 
-@TeleOp(name="tempDriveA", group="Temp")
+//@TeleOp(name="tempDriveA", group="Temp")
 public class TempDriveA extends TempOpMode {
 
 
