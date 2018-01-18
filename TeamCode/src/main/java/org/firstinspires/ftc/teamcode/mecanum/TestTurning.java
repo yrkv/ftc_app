@@ -11,14 +11,20 @@ public class TestTurning extends MecanumOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         initRobot();
+        initGyro();
 
         waitForStart();
+        telemetry.log().clear();
 
+        getGyroData();
+
+        telemetry.log().add("%.2f", angles.firstAngle);
         autoTurn(45, 0.35, 10, true);
-
+        telemetry.log().add("%.2f", angles.firstAngle);
         autoTurn(0, 0.35, 10, true);
-
+        telemetry.log().add("%.2f", angles.firstAngle);
         autoTurn(-90, 0.35, 10, true);
+        telemetry.log().add("%.2f", angles.firstAngle);
 //
 //        autoTurn(-180, 0.35, 10, true);
 //
@@ -26,8 +32,7 @@ public class TestTurning extends MecanumOpMode {
 //
 //        autoStrafe(10, 0.3, 10);
 
-        getGyroData();
-        telemetry.addData("angle", angles.firstAngle);
+        sleep(10000);
         telemetry.update();
 
     }

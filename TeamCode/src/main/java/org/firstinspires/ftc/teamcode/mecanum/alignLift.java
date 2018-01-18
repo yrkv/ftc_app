@@ -14,6 +14,8 @@ public class alignLift extends MecanumOpMode {
 
         waitForStart();
 
+        telemetry.log().add("started");
+
         while (opModeIsActive()) {
             if (gamepad1.left_stick_y == 0) {
                 leftLift.setPower(gamepad2.left_stick_y);

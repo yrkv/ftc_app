@@ -1,7 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 /**
- * Created by USER on 10/21/2017.
+ * Contains a list of all buttons on the gamepad,
+ * in order of how the gamepad returns their values.
  */
 
 public enum Button {

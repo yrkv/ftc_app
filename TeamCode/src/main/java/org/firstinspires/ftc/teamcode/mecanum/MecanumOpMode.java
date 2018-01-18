@@ -4,41 +4,63 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Button;
 import org.firstinspires.ftc.teamcode.ButtonEvent;
 import org.firstinspires.ftc.teamcode.Motor8696;
+import org.firstinspires.ftc.teamcode.MotorState;
 import org.firstinspires.ftc.teamcode.OpMode8696;
 import org.firstinspires.ftc.teamcode.RobotState;
 import org.firstinspires.ftc.teamcode.RunUntil;
-import org.firstinspires.ftc.teamcode.ServoTarget;
 
 /**
- * Created by USER on 11/5/2017.
+ * An implementation of the {@link OpMode8696} class to be used with the current 8696 robot.
+ * This class includes features specific to the current robot that some robots may not have.
  */
 
 public abstract class MecanumOpMode extends OpMode8696 {
 
     /**
-     * Servo to push one of the jewels <br/>
+     * Servo to push one of the jewels during autonomous <br/>
+     * 0 = up, 1 = down
+     * <br/>
+     * "poosher" is a joke referencing one of the teachers at West High
+     */
+    protected Servo ballPoosher;
+
+    /**
+     * Servo to push a glyph inside the robot during teleOp <br/>
      * 0 = up, 1 = down
      */
-    Servo ballPoosher;
     Servo cubePoosher;
+
     /**
-     *
+     * Servo at the back left of the robot that rotates the platform for placing glyphs. <br/>
      * 1 = up, 0 = down
      */
     Servo leftDump;
+    /**
+     * Same as {@link #leftDump}, but on the right side. <br/>
+     * 1 = up, 0 = down
+     * @see #leftDump
+     */
     Servo rightDump;
 
-    DcMotor leftCollector;
-    DcMotor rightCollector;
+    protected DcMotor leftCollector;
+    protected DcMotor rightCollector;
 
     DcMotor leftLift;
     DcMotor rightLift;
+
+    /**
+     * How many encoder counts the lift motors need
+     * to rotate to elevate the lift by one unit.
+     * Intended to be about a third of a glyph.
+     */
+    private final static int LIFT_BLOCK_HEIGHT = 1000;
+
+    private int liftPosition = 0;
 
     /**
      * constant for how many encoder counts are equivalent
@@ -46,13 +68,21 @@ public abstract class MecanumOpMode extends OpMode8696 {
      */
     private static final double STRAFE_COEFFICIENT = 94; // TODO: make this value more exact
 
+    /**
+     * Multiplier to alter the speed of the robot when the dpad is used to drive.
+     */
     private static final double DPAD_MULT = 0.5;
+
+    /**
+     * The power used for the collectors.
+     */
+    private double collectorPower = 0.35;
 
     boolean collectorActive = false;
 
     int reverse = 1;
-
-    ServoTarget cubePoosherTarget = ServoTarget.NULL;
+    private int reverseLeftCollector = 1;
+    private int reverseRightCollector = 1;
 
     protected void initRobot() {
         super.initRobot();
@@ -64,7 +94,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
 
         for (Motor8696 motor : motors) {
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
@@ -105,17 +135,6 @@ public abstract class MecanumOpMode extends OpMode8696 {
         leftLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
-        parameters.loggingEnabled      = true;
-        parameters.loggingTag          = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-
         leftLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
@@ -132,6 +151,99 @@ public abstract class MecanumOpMode extends OpMode8696 {
         });
     }
 
+    protected void initGyro() {
+        telemetry.log().add("initializing imu...");
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        boolean initialized = imu.initialize(parameters);
+
+        telemetry.log().clear();
+        telemetry.log().add(initialized ? "imu initialized successfully" : "imu failed to initialize");
+
+    }
+
+    void runCollector() {
+        if (collectorActive) {
+            if (gamepad2.right_bumper) {
+                leftCollector.setPower(-collectorPower);
+                rightCollector.setPower(-collectorPower);
+            } else if (gamepad2.b) {
+                leftCollector.setPower(collectorPower);
+                rightCollector.setPower(-collectorPower);
+            } else if (gamepad2.x) {
+                leftCollector.setPower(-collectorPower);
+                rightCollector.setPower(collectorPower);
+            } else {
+                leftCollector.setPower(collectorPower * reverseLeftCollector);
+                rightCollector.setPower(collectorPower * reverseRightCollector);
+            }
+        } else {
+            leftCollector.setPower(0);
+            rightCollector.setPower(0);
+        }
+    }
+
+    /**
+     * Check if either collector has jammed (slowed down sufficiently) and fix it.
+     */
+    private void checkCollectors() {
+        reverseLeftCollector = reverseRightCollector = 1;
+        if (checkCollector(robotState.motors[4])) {
+            reverseLeftCollector = -1;
+        }
+        else if (checkCollector(robotState.motors[5])) {
+            reverseRightCollector = -1;
+        }
+    }
+
+    /**
+     * Check if a specific collector has jammed (slowed down sufficiently) and fix it.
+     */
+    private boolean checkCollector(MotorState motorState) {
+        if (motorState.power == 0 || motorState.lastPower == 0)
+            return false;
+        if (motorState.speed < 1) {// TODO: find a more optimal value
+            return true;
+        }
+
+        return false;
+    }
+
+    private void setLiftTarget() {
+        leftLift.setTargetPosition(liftPosition * LIFT_BLOCK_HEIGHT);
+        rightLift.setTargetPosition(liftPosition * LIFT_BLOCK_HEIGHT);
+
+        leftLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    protected void runLift() {
+        int leftDiff = Math.abs(liftPosition * LIFT_BLOCK_HEIGHT - leftLift.getCurrentPosition());
+        int rightDiff = Math.abs(liftPosition * LIFT_BLOCK_HEIGHT - rightLift.getCurrentPosition());
+
+        if (leftDiff > rightDiff) {
+            leftLift.setPower(0.62);
+            rightLift.setPower(0.6);
+        } else if (leftDiff > rightDiff) {
+            leftLift.setPower(0.6);
+            rightLift.setPower(0.62);
+        } else {
+            leftLift.setPower(0.6);
+            rightLift.setPower(0.6);
+        }
+    }
+
+    /**
+     * Assign button events at the start of the program
+     */
     void buttonEvents() {
         addButtonEvent(1, new ButtonEvent(Button.X) {
             public void onDown() {
@@ -156,23 +268,11 @@ public abstract class MecanumOpMode extends OpMode8696 {
         });
 
         addButtonEvent(2, new ButtonEvent(Button.LEFT_BUMPER) {
-            private static final double SPEED = 0.001;
-            private double min = 0.4, max = 0.9; // TODO: put this in one place
-
             public void onDown() {
-                double target = 0;
-                double diff = Math.abs(cubePoosher.getPosition() - target) * (max - min);
-
                 cubePoosher.setPosition(0);
-//                cubePoosherTarget = new ServoTarget(cubePoosher,
-//                        System.currentTimeMillis(),
-//                        System.currentTimeMillis() + (int) (diff / SPEED),
-//                        cubePoosher.getPosition(),
-//                        target);
             }
 
             public void onUp() {
-                cubePoosherTarget = ServoTarget.NULL;
                 cubePoosher.setPosition(1);
             }
         });
@@ -191,22 +291,34 @@ public abstract class MecanumOpMode extends OpMode8696 {
             public void onDown() {
                 leftDump.setPosition(1);
                 rightDump.setPosition(1);
-                cubePoosher.setPosition(0.5);
             }
 
             public void onUp() {
                 leftDump.setPosition(0);
                 rightDump.setPosition(0);
-                cubePoosher.setPosition(1);
+            }
+        });
+
+        addButtonEvent(2, new ButtonEvent(Button.UP) {
+            public void onDown() {
+                liftPosition++;
+                setLiftTarget();
+            }
+        });
+
+        addButtonEvent(2, new ButtonEvent(Button.DOWN) {
+            public void onDown() {
+                liftPosition--;
+                setLiftTarget();
             }
         });
     }
 
     boolean dpadDrive() {
         if (gamepad1.dpad_right) {
-            horizontalDrive(DPAD_MULT * driveSpeed, 1);
+            horizontalDrive(DPAD_MULT * driveSpeed);
         } else if (gamepad1.dpad_left) {
-            horizontalDrive(DPAD_MULT * driveSpeed, -1);
+            horizontalDrive(-DPAD_MULT * driveSpeed);
         } else if (gamepad1.dpad_up) {
             verticalDrive(DPAD_MULT * driveSpeed / Math.sqrt(2), -1, -1);
         } else if (gamepad1.dpad_down) {
@@ -217,6 +329,15 @@ public abstract class MecanumOpMode extends OpMode8696 {
         return true;
     }
 
+    /**
+     * Run the vertical component of driving with mecanum wheels.
+     * Tank driving combined with lateral motion.
+     * @param mult power multiplier
+     * @param left left side power
+     * @param right right side power
+     *
+     * @see #horizontalDrive(double)
+     */
     void verticalDrive(double mult, double left, double right) {
         leftFront .addPower(mult * left);
         leftBack  .addPower(mult * left);
@@ -224,15 +345,23 @@ public abstract class MecanumOpMode extends OpMode8696 {
         rightBack .addPower(mult * right);
     }
 
-    void horizontalDrive(double mult, double value) {
-        leftFront .addPower(mult * -(value));
-        leftBack  .addPower(mult *  (value));
-        rightFront.addPower(mult *  (value));
-        rightBack .addPower(mult * -(value));
+    /**
+     * Run the horizontal component of driving with mecanum wheels.
+     * Tank driving combined with lateral motion.
+     * @param power the power delivered to the motors.
+     *
+     * @see #verticalDrive(double, double, double)
+     */
+    void horizontalDrive(double power) {
+        leftFront .addPower(-power);
+        leftBack  .addPower( power);
+        rightFront.addPower( power);
+        rightBack .addPower(-power);
     }
 
     /**
      * Calculate the angles for driving and move/rotate the robot.
+     * Currently unused because the other driving method is better.
      */
     protected void mecanumTeleOpDrive() {
         double ly = gamepad1.left_stick_y;
@@ -291,7 +420,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
         rightFront.addPower((Math.sin(angle) + Math.cos(angle)) * power);
     }
 
-    void autoStrafe(double inches, double power, double timeoutSeconds) {
+    protected void autoStrafe(double inches, double power, double timeoutSeconds) {
         autoStrafe(inches, power, timeoutSeconds, new RunUntil() {
             @Override
             public boolean stop() {
@@ -308,7 +437,7 @@ public abstract class MecanumOpMode extends OpMode8696 {
      * @param power Power to set the motors to.
      * @param timeoutSeconds After this many seconds, it stops trying.
      */
-    void autoStrafe(double inches, double power, double timeoutSeconds, RunUntil runUntil) {
+    protected void autoStrafe(double inches, double power, double timeoutSeconds, RunUntil runUntil) {
         for (Motor8696 motor : motors) {
             motor.storePosition();
             motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -337,6 +466,9 @@ public abstract class MecanumOpMode extends OpMode8696 {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void periodic() {
         robotState.update(this);

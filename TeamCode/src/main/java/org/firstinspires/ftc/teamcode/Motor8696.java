@@ -5,13 +5,15 @@ import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.configuration.MotorConfigurationType;
 
 /**
- * Created by USER on 10/28/2017.
+ * Wrapper class that allows me to edit the standard DcMotor methods and add my own functionality.
  */
 
+// this class is confusing and hard to work with. It should
+// probably be removed and everything else refactored to not use it.
 public class Motor8696 implements DcMotor {
     private DcMotor motor;
 
-    public static final int COUNTS_PER_REVOLUTION = 1440; // TODO: this may or may not be correct.
+    public static final int COUNTS_PER_REVOLUTION = 1440;
 
     private double maxPower = 1;
     private double currentPower = 0;

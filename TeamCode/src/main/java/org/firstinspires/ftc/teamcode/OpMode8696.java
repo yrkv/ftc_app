@@ -23,23 +23,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
-/*
-            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-                    Version 2, December 2004
-
- Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
-
- Everyone is permitted to copy and distribute verbatim or modified
- copies of this license document, and changing it is allowed as long
- as the name is changed.
-
-            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-
-  0. You just DO WHAT THE FUCK YOU WANT TO.
-
-*/
-
+/**
+ * Superclass used by all of team 8696's opModes
+ *
+ * @author Yegor Kuznetsov
+ */
 public abstract class OpMode8696 extends LinearOpMode {
 
     protected Motor8696 leftBack;
@@ -49,6 +37,12 @@ public abstract class OpMode8696 extends LinearOpMode {
 
     protected ElapsedTime runtime = new ElapsedTime();
 
+    /**
+     * Array containing the four motors in the drive train <br>
+     * leftFront, rightFront, leftBack, rightBack
+     *
+     * @see Motor8696
+     */
     protected Motor8696[] motors = new Motor8696[4];
 
     private ButtonEvent[][] buttonEvents = new ButtonEvent[2][Button.values().length];
@@ -101,7 +95,7 @@ public abstract class OpMode8696 extends LinearOpMode {
      * @see #periodic(long ms)
      */
     protected void periodic() {
-//        robotState = new RobotState(this);
+
     }
 
     protected void initRobot() {
@@ -155,6 +149,9 @@ public abstract class OpMode8696 extends LinearOpMode {
         buttonEvents[gamepad-1][event.button.ordinal()] = event;
     }
 
+    /**
+     * runs the button events for both gamepads
+     */
     protected void runButtonEvents() {
         runButtonEvents(1);
         runButtonEvents(2);
@@ -232,7 +229,7 @@ public abstract class OpMode8696 extends LinearOpMode {
 
         double diff = adjustAngle(angle, angles.firstAngle);
 
-        telemetry.log().add("%.2f", diff);
+//        telemetry.log().add("%.2f", diff);
 
         while (opModeIsActive() &&
                 onHeading(angle, power, 0.5, useEncoders) &&
