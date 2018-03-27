@@ -13,12 +13,10 @@ public class RedAutoTurn extends BaseAuto {
     }
 
     protected void alignToCryptobox() {
-        autoDrive(-24, 0.4, 8); // drive forward until robot is off of the platform.
+        autoDrive(-24, 0.3, 8); // drive forward until robot is off of the platform.
 
-        autoTurn(90, 0.4, 8, true);
+        autoTurn(90, 0.3, 8, true);
         sleep(100);
-        autoTurn(90, 0.5, 1 , true);
-
-//        autoStrafe(-5, 0.4, 2);
+        autoTurn(90, 0.4, 1, true);
     }
 }

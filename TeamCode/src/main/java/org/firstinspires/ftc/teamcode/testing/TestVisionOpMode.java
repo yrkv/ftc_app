@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.testing;
 
 import com.disnodeteam.dogecv.CameraViewDisplay;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -11,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
  * where a certain color is, in this case, blue.
  *
  */
+@Disabled
 @TeleOp(name="Blue Vision")
 public class TestVisionOpMode extends OpMode {
     TestVision blueVision;

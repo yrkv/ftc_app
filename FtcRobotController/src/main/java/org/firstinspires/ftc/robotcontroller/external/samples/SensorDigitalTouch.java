@@ -29,21 +29,24 @@
 
 package org.firstinspires.ftc.robotcontroller.external.samples;
 
+import com.qualcomm.hardware.ams.AMSColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.LED;
+import com.qualcomm.robotcore.hardware.configuration.ExpansionHubMotorControllerParamsState;
 
 /*
  * This is an example LinearOpMode that shows how to use
  * a REV Robotics Touch Sensor.
  *
- * It assumes that the touch sensor is configured with a name of "digitalTouch".
+ * It assumes that the touch sensor is configured with a name of "LEDstrip".
  *
  * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
  */
-@Autonomous(name = "Sensor: Digital touch", group = "Sensor")
+@Autonomous(name = "LEDs", group = "Sensor")
 @Disabled
 public class SensorDigitalTouch extends LinearOpMode {
     /**
@@ -56,33 +59,19 @@ public class SensorDigitalTouch extends LinearOpMode {
      * The lower (first) pin stays unconnected.*
      */
 
-    DigitalChannel digitalTouch;  // Hardware Device Object
+    LED LEDstrip;  // Hardware Device Object
 
     @Override
     public void runOpMode() {
 
-        // get a reference to our digitalTouch object.
-        digitalTouch = hardwareMap.get(DigitalChannel.class, "sensor_digital");
-
-        // set the digital channel to input.
-        digitalTouch.setMode(DigitalChannel.Mode.INPUT);
+        // get a reference to our LEDstrip object.
+        LEDstrip = hardwareMap.get(LED.class, "LED strip");
 
         // wait for the start button to be pressed.
         waitForStart();
 
-        // while the op mode is active, loop and read the light levels.
-        // Note we use opModeIsActive() as our loop condition because it is an interruptible method.
-        while (opModeIsActive()) {
+        LEDstrip.enable(true);
 
-            // send the info back to driver station using telemetry function.
-            // if the digital channel returns true it's HIGH and the button is unpressed.
-            if (digitalTouch.getState() == true) {
-                telemetry.addData("Digital Touch", "Is Not Pressed");
-            } else {
-                telemetry.addData("Digital Touch", "Is Pressed");
-            }
-
-            telemetry.update();
-        }
+        sleep(30000);
     }
 }

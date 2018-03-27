@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.configuration.MotorConfigurationType;
 public class Motor8696 implements DcMotor {
     private DcMotor motor;
 
-    public static final int COUNTS_PER_REVOLUTION = 1440;
+    public static final int COUNTS_PER_REVOLUTION = (int) (1440 * 10 / 26.5);
 
     private double maxPower = 1;
     private double currentPower = 0;

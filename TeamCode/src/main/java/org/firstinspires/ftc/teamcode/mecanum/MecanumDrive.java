@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.mecanum;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 /**
  * Created by USER on 10/13/2017.
  */
 
+@Disabled
 @TeleOp(name="mecanumDrive", group="Linear Opmode")
 public class MecanumDrive extends MecanumOpMode {
 
@@ -23,7 +25,7 @@ public class MecanumDrive extends MecanumOpMode {
             else
                 mecanumTeleOpDrive();
 
-            runButtonEvents();
+            buttonEvents.run();
 
             telemetry.update();
 

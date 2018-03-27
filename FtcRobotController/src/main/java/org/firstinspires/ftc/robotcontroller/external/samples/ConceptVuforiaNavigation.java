@@ -297,6 +297,7 @@ public class ConceptVuforiaNavigation extends LinearOpMode {
         while (opModeIsActive()) {
 
             for (VuforiaTrackable trackable : allTrackables) {
+
                 /**
                  * getUpdatedRobotLocation() will return null if no new information is available since
                  * the last time that call was made, or if the trackable is not currently visible.

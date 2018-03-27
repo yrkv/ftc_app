@@ -1,16 +1,13 @@
 package org.firstinspires.ftc.teamcode.mecanum;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-
-import org.firstinspires.ftc.teamcode.Button;
-import org.firstinspires.ftc.teamcode.ButtonEvent;
-import org.firstinspires.ftc.teamcode.MotorState;
 
 /**
  * Created by USER on 1/7/2018.
  */
 
+@Disabled
 @TeleOp(name="FancyDriving", group="Temp")
 public class FancyDriving extends MecanumOpMode {
 
@@ -44,9 +41,6 @@ public class FancyDriving extends MecanumOpMode {
 
             ballPoosher.setPosition(gamepad2.left_trigger);
 
-            telemetry.addData(leftCollector.getDeviceName(), robotState.motors[4].speed);
-            telemetry.addData(rightCollector.getDeviceName(), robotState.motors[5].speed);
-
             telemetry.addData("gamepadLeft", getGamepadAngle(gamepad1.left_stick_x, gamepad1.left_stick_y));
             telemetry.addData("gamepadRight", getGamepadAngle(gamepad1.right_stick_x, gamepad1.right_stick_y));
 
@@ -66,7 +60,7 @@ public class FancyDriving extends MecanumOpMode {
 //                runMotors();
             }
 
-            runButtonEvents();
+            buttonEvents.run();
             periodic(100);
 
             telemetry.update();

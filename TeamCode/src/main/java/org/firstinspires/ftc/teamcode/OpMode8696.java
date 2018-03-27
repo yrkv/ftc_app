@@ -1,18 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.exception.RobotCoreException;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoControllerEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-import com.vuforia.PIXEL_FORMAT;
-import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -22,13 +16,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.firstinspires.ftc.teamcode.buttonEvents.ButtonEvent;
+import org.firstinspires.ftc.teamcode.buttonEvents.ButtonEventManager;
+
+// TODO: figure out how to use adb to graph some numbers.
+// TODO: use it to optimize turning and driving in auto
+// TODO: testing framework
 
 /**
- * Superclass used by all of team 8696's opModes
- *
- * @author Yegor Kuznetsov
+ * Superclass used by all of team 8696's opModes.
+ * Contains all the methods and functionality that
+ * any generic robot might have.
  */
-public abstract class OpMode8696 extends LinearOpMode {
+public abstract class OpMode8696 extends LinearOpMode8696 {
 
     protected Motor8696 leftBack;
     protected Motor8696 rightBack;
@@ -45,15 +45,8 @@ public abstract class OpMode8696 extends LinearOpMode {
      */
     protected Motor8696[] motors = new Motor8696[4];
 
-    private ButtonEvent[][] buttonEvents = new ButtonEvent[2][Button.values().length];
-
-    private int[] wasPressed = new int[2];
-
     protected VuforiaLocalizer vuforia;
     protected VuforiaTrackables relicTrackables;
-
-    protected NavxMicroNavigationSensor navx;
-    protected IntegratingGyroscope gyro;
 
     protected BNO055IMU imu;
 
@@ -66,20 +59,20 @@ public abstract class OpMode8696 extends LinearOpMode {
     public static final boolean BLUE = false;
 
     /**
-     * constant for how many encodes counts are equivalent
-     * to rotating the robot one degree.
+     * constant for how many encoder counts are
+     * equivalent to rotating the robot one degree.
      */
-    private static final double TURN_COEFFICIENT = 15;
-
-    protected RobotState robotState;
+    private static final double TURN_COEFFICIENT = 15 / 1.4;
 
     private long lastPeriodicCall = 0;
     protected VuforiaTrackable relicTemplate;
 
+    protected ButtonEventManager buttonEvents;
+
     /**
      * Check if enough time has passed to call {@link #periodic()} again.
      * If so, call it. Should be called every iteration of the main loop.
-     * @param ms number of milliseconds between each call to {@link #periodic()}
+     * @param ms number of milliseconds between every {@link #periodic()}
      * @see #periodic()
      */
     protected void periodic(long ms) {
@@ -99,11 +92,12 @@ public abstract class OpMode8696 extends LinearOpMode {
     }
 
     protected void initRobot() {
-        initMotors();
+        initDriveTrain();
         lastPeriodicCall = System.currentTimeMillis();
+        buttonEvents = new ButtonEventManager(gamepad1, gamepad2);
     }
 
-    protected void initMotors() {
+    protected void initDriveTrain() {
         leftFront  = new Motor8696(hardwareMap.get(DcMotor.class, "leftFront")); //0
         rightFront = new Motor8696(hardwareMap.get(DcMotor.class, "rightFront"));//1
         leftBack   = new Motor8696(hardwareMap.get(DcMotor.class, "leftBack"));  //2
@@ -136,79 +130,17 @@ public abstract class OpMode8696 extends LinearOpMode {
 
         this.vuforia = new ClosableVuforiaLocalizer(parameters);
 
-//        vuforia.setFrameQueueCapacity(5);
-//
-//        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
-
         relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
         relicTemplate = relicTrackables.get(0);
-
     }
 
+    /**
+     * Add events for a specific button
+     * @param gamepad which gamepad the button is on
+     * @param event the event to be called
+     */
     protected void addButtonEvent(int gamepad, ButtonEvent event) {
-        buttonEvents[gamepad-1][event.button.ordinal()] = event;
-    }
-
-    /**
-     * runs the button events for both gamepads
-     */
-    protected void runButtonEvents() {
-        runButtonEvents(1);
-        runButtonEvents(2);
-    }
-
-    private void runButtonEvents(int gamepad) {
-        int currPressed = getButtonsPressed(gamepad);
-
-        gamepad--;
-
-        if (currPressed >= 0 && wasPressed[gamepad] >= 0) { // don't bother running if no buttons pressed
-            // use bitwise operators to check all buttons at the same time
-            int onDown    =  currPressed & ~wasPressed[gamepad];
-            int onUp      = ~currPressed &  wasPressed[gamepad];
-            int whileDown =  currPressed &  wasPressed[gamepad];
-            int whileUp   = ~currPressed & ~wasPressed[gamepad];
-            for (int i = 0; i < 15; i++) {
-                ButtonEvent event = buttonEvents[gamepad][i];
-                if (event != null) {
-                    // select specific bits and check if the related event should be called.
-                    if ((onDown    & (1 << i)) > 0) event.onDown();
-                    if ((onUp      & (1 << i)) > 0) event.onUp();
-                    if ((whileDown & (1 << i)) > 0) event.whileDown();
-                    if ((whileUp   & (1 << i)) > 0) event.whileUp();
-                }
-            }
-        }
-
-        wasPressed[gamepad] = currPressed;
-    }
-    
-    /**
-     * Get the button data as an int from one of the gamepads.
-     *
-     * @param gamepad which gamepad to access.
-     */
-    
-    private int getButtonsPressed(int gamepad) {
-        int currPressed = 0;
-        
-        try {
-            byte[] arr = ((gamepad == 1) ? gamepad1 : gamepad2).toByteArray(); // select the right gamepad
-            int len = arr.length;
-
-            // extract the button data from the byte array
-            currPressed += arr[len-3]; currPressed = currPressed << 8;
-            currPressed += arr[len-2] & 0b11111111;
-
-            // the left-most bit of the byte is counted as the "negative" part,
-            // and the sign is maintained when it becomes an int.
-            // " & 0b11111111" limits it to the 8 bits I want.
-            // This isn't an issue with the first part because there are only 7 used bits.
-        } catch (RobotCoreException e) {
-            e.printStackTrace();
-        }
-        
-        return currPressed;
+        buttonEvents.addButtonEvent(gamepad, event);
     }
 
     protected double getGamepadAngle(double x, double y) {
@@ -224,16 +156,21 @@ public abstract class OpMode8696 extends LinearOpMode {
     }
 
     protected void autoTurn(double angle, double power, double timeoutSeconds, boolean useEncoders) {
+        autoTurn(angle, power, timeoutSeconds, useEncoders, new RunUntil() {
+            public boolean stop() {
+                return false;
+            }
+        });
+    }
+
+    protected void autoTurn(double angle, double power, double timeoutSeconds, boolean useEncoders, RunUntil runUntil) {
         runtime.reset();
         getGyroData();
 
-        double diff = adjustAngle(angle, angles.firstAngle);
-
-//        telemetry.log().add("%.2f", diff);
-
         while (opModeIsActive() &&
-                onHeading(angle, power, 0.5, useEncoders) &&
-                runtime.seconds() < timeoutSeconds) {
+                onHeading(angle, power, 1.0, useEncoders) &&
+                runtime.seconds() < timeoutSeconds &&
+                !runUntil.stop()) {
             idle();
             runMotors();
             for (Motor8696 motor: motors) {
@@ -318,7 +255,6 @@ public abstract class OpMode8696 extends LinearOpMode {
     /**
      * Calculate the difference between two angles and set the output to be in a range.
      * Used for calculating how far the robot needs to turn to get to a target rotation.
-     *
      * @param target The target rotation
      * @param currentRotation The current robot orientation, (preferably) found by a gyro sensor.
      * @return Adjusted angle, -180 <= angle <= 180
@@ -369,6 +305,12 @@ public abstract class OpMode8696 extends LinearOpMode {
     protected void runMotors() {
         for (Motor8696 motor : motors) {
             motor.setPower();
+        }
+    }
+
+    protected void enableEncoders() {
+        for (Motor8696 motor : motors) {
+            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
 

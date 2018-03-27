@@ -1,10 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.buttonEvents;
 
 /**
- * Used to handle and set up events with buttons on the gamepad.
- * {@link OpMode8696#runButtonEvents()} should be called every iteration of the main loop.
- *
- * @see OpMode8696#runButtonEvents()
+ * Used to handle and set up events with buttons on the gamepad, such as toggling a state.
+ * Before we had this system, we needed to use instance fields in whichever opMode when we
+ * wanted to have something happen when you press a button. Our system lets us assign some
+ * button events to each gamepad at the start of the program, making the code much clearer
+ * {@link ButtonEventManager#run()} should be called every iteration of the main loop.
+ * @see ButtonEventManager#run()
+ * @see Button
  */
 
 public abstract class ButtonEvent {

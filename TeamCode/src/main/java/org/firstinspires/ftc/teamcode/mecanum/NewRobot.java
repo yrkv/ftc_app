@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.mecanum;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import org.firstinspires.ftc.teamcode.Button;
-import org.firstinspires.ftc.teamcode.ButtonEvent;
 import org.firstinspires.ftc.teamcode.Motor8696;
 
 @TeleOp(name="testNewBot", group="Temp")
@@ -32,23 +30,19 @@ public class NewRobot extends MecanumOpMode {
         buttonEvents();
 
         waitForStart();
+        ballPoosher.setPosition(0);
 
         telemetry.log().clear();
 
         while (opModeIsActive()) {
-
-//            getGyroData();
             runCollector();
 
             runLift();
+            alignLift();
 
-            telemetry.addData("leftLift", leftLift.getCurrentPosition());
-            telemetry.addData("rightLift", rightLift.getCurrentPosition());
-
-            telemetry.addData(leftCollector.getDeviceName(), robotState.motors[4].speed);
-            telemetry.addData(rightCollector.getDeviceName(), robotState.motors[5].speed);
-
-            telemetry.addData("gamepadAngle", getGamepadAngle(gamepad1.left_stick_x, gamepad1.left_stick_y));
+            for (Motor8696 motor : motors) {
+                telemetry.addData(motor.getPortNumber() + "", motor.getCurrentPosition());
+            }
 
             if (!dpadDrive()) {
                 if (reverse > 0)
@@ -64,7 +58,7 @@ public class NewRobot extends MecanumOpMode {
                 runMotors();
             }
 
-            runButtonEvents();
+            buttonEvents.run();
             telemetry.update();
         }
     }
